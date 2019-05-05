@@ -1,0 +1,51 @@
+#start {
+    margin: 10px;
+}
+
+.board {
+    display: flex;
+    flex-wrap: wrap;
+    width: 400px;
+    height: 400px;
+    border: solid 1px;
+}
+
+.cell {
+    width: 100px;
+    height: 100px;
+    border: solid 1px;
+    box-sizing: border-box;
+}
+
+.color1 {
+    background-color: #0f0;
+}
+
+.color2 {
+    background-color: #000;
+}
+
+.color3 {
+    background-color: #f00;
+}
+
+.color4 {
+    background-color: #00f;
+}
+
+.color5 {
+    background-color: #808080;
+}
+
+.color6 {
+    background-color: #ff0;
+}
+
+.color7 {
+    background-color: #0ff;
+}
+
+.color8 {
+    background-color: #f0f;
+}
+
