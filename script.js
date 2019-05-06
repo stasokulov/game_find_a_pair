@@ -107,8 +107,10 @@ class Game {
         //Если закрытые клетки закончились - завершаем игру.
         let closeCells = this.board.querySelectorAll('.close');
         if (closeCells.length === 0) {
-            alert('Вы выиграли!\r\r Затраченное время: ' + this.watch.innerHTML);
-            location.reload();
+            setTimeout( () => {
+                alert('Вы выиграли!\r\r Затраченное время: ' + this.watch.innerHTML);
+                location.reload();
+            }, 0 );
         }; 
     };
 
