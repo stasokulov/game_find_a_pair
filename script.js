@@ -3,10 +3,15 @@
 class Game {
     constructor() {
         this.count = '';
-        this.colors = [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8]; //Массив для создания классов, определяющих цвет.
+        this.colorsBase = [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8]; //Массив для создания классов, определяющих цвет.
         this.start = document.querySelector('#start');
         this.watch = document.querySelector('#timer');
         this.board;
+    }
+
+    startGame() {
+        this.createBoard();
+        this.startTimer();
     }
 
     createBoard() {
@@ -21,14 +26,15 @@ class Game {
         templateCell.classList.add('close');
 
         //Выбираем все цвета по-одному в случайном порядке, красим клетку, заполняем доску.
-        for (let i = this.colors.length; i > 0; i--) {
+        let colors = [...this.colorsBase];
+        for (let i = colors.length; i > 0; i--) {
 
             //Выбираем случайный элемент в массиве.
-            const numColor = Math.floor( Math.random() * this.colors.length );
-            const color = this.colors[numColor];
+            const numColor = Math.floor( Math.random() * colors.length );
+            const color = colors[numColor];
 
             //Убираем из массива этот элемент.
-            this.colors.splice([numColor], 1);
+            colors.splice([numColor], 1);
 
             //Создаем клетку и записываем в дата-атрибут название класса, определяющего цвет.
             const cell = templateCell.cloneNode(true);
@@ -38,26 +44,35 @@ class Game {
             this.board.appendChild(cell);
             document.body.insertBefore(this.board, document.body.firstChild);
         };
+    }
 
+    startTimer() {
         //Вешаем слушатель клика на кнопку 'Старт'.
         this.start.addEventListener('click', () => {
+            //Очищаем игру от данных предыдущего раунда.
+            this.clearGame();
+            this.createBoard();
             //Вешаем слушатель клика на доску.
-            this.board.addEventListener( 'click', this.showColor.bind(this) );
+            this.board.addEventListener('click', (event) => {
+                this.showColor(event);
+            });
             //Запускаем таймер.
             this.timerStart();
         });
     }
 
     timerStart() {
+        //Останавливаем таймер, если был запущен ранее.
+        clearInterval(this.interval);
         //Фиксируем время клика и запускаем пересчет таймера каждые 0,1 секунды.
         let timer = new Date().getTime();
-        const interval = setInterval(() => {
+        this.interval = setInterval(() => {
             //Сколько секунд прошло с момента запуска таймера.
             let deltaSec = (new Date().getTime() - timer)/1000;
             //Если больше часа, то сбрасываем игру.
             if (deltaSec > 3600) {
                 alert('Вы играете уже целый час. Игра остановлена.');
-                clearInterval(interval);
+                clearInterval(this.interval);
                 location.reload();
             };
             //Выводим количество минут и секунд через разделитель ":".
@@ -114,6 +129,11 @@ class Game {
         }; 
     };
 
+    clearGame() {
+        this.board.remove();
+        this.count = '';
+    }
+
     markOpen(cell) {
         cell.classList.remove('close');
     };
@@ -125,7 +145,7 @@ class Game {
 }
 
 const newGame = new Game();
-newGame.createBoard();
+newGame.startGame();
 
 
 
