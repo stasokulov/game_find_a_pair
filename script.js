@@ -1,6 +1,6 @@
 'use strict'
 
-class Game {
+var game = class Game {
     constructor() {
         this.count = '';
         this.colorsBase = [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8]; //Массив для создания классов, определяющих цвет.
@@ -10,8 +10,12 @@ class Game {
     }
 
     startGame() {
+        //Создаем доску
         this.createBoard();
-        this.startTimer();
+        //Вешаем слушатель клика на кнопку 'Старт'.
+        this.start.addEventListener('click', () => {
+            this.startTimer();
+        });
     }
 
     createBoard() {
@@ -40,35 +44,27 @@ class Game {
             const cell = templateCell.cloneNode(true);
             cell.dataset.color = 'color' + [color];
 
-            //Закидываем клетки на доску, а доску на страницу.
+            //Закидываем клетки на доску.
             this.board.appendChild(cell);
-            document.body.insertBefore(this.board, document.body.firstChild);
         };
+        //Закидываем доску на страницу.
+        document.body.insertBefore(this.board, document.body.firstChild);
     }
 
     startTimer() {
-        //Вешаем слушатель клика на кнопку 'Старт'.
-        this.start.addEventListener('click', () => {
-            //Очищаем игру от данных предыдущего раунда.
-            this.clearGame();
-            this.createBoard();
-            //Вешаем слушатель клика на доску.
-            this.board.addEventListener('click', (event) => {
-                this.showColor(event);
-            });
-            //Запускаем таймер.
-            this.timerStart();
-        });
-    }
-
-    timerStart() {
+        //Очищаем игру от данных предыдущего раунда.
+        this.clearGame();
+        //Создаем доску (затираем предыдущую доску).
+        this.createBoard();
+        //Вешаем одноразовый слушатель клика на доску.
+        this.board.addEventListener( 'click', this.showColor.bind(this), {once: true} );
         //Останавливаем таймер, если был запущен ранее.
         clearInterval(this.interval);
         //Фиксируем время клика и запускаем пересчет таймера каждые 0,1 секунды.
-        let timer = new Date().getTime();
+        const timeStart = new Date().getTime();
         this.interval = setInterval(() => {
             //Сколько секунд прошло с момента запуска таймера.
-            let deltaSec = (new Date().getTime() - timer)/1000;
+            let deltaSec = (new Date().getTime() - timeStart)/1000;
             //Если больше часа, то сбрасываем игру.
             if (deltaSec > 3600) {
                 alert('Вы играете уже целый час. Игра остановлена.');
@@ -79,8 +75,8 @@ class Game {
             if (deltaSec < 60) {
                 this.watch.innerHTML = '00:' + deltaSec;
             } else {
-                let deltaSecMin = Math.ceil(deltaSec/60);
-                let deltaSecSec = deltaSec - deltaSecMin;
+                let deltaSecMin = Math.ceil(deltaSec/60); //Количество минут
+                let deltaSecSec = deltaSec - deltaSecMin; //Количество секунд
                 this.watch.innerHTML = deltaSecMin + ":" + deltaSecSec;
             };
         }, 100);
@@ -93,29 +89,46 @@ class Game {
         //Реагируем только на клик по закрытой клетке.
         if ( cell.classList.contains('close') ) {
             //Берем строку из атрибута data и присваиваем ее как класс.
-            const data = cell.dataset.color;
-            cell.classList.add([data]);
-
+            const dataColor = cell.dataset.color;
+            cell.classList.add([dataColor]);
             //Проверяем счетчик.
             if (this.count !== '') {
-                //Если там есть запись, то сравниваем ее с цветом кликнутой клетки.
-                if (this.count !== data) {
-                    //Если цвета разные, то убираем окраску кликнутой клетки.
+                //Если там есть запись, находим предыдущую клетку.
+                const waitingCell = this.board.querySelector('.waiting');
+                //Сравниваем ее с цветом кликнутой клетки.
+                if (this.count !== dataColor) {
+                    //Если цвета разные.
+                    //Убираем статус ждущей с предыдущей клетки.
+                    this.markNoWaiting(waitingCell);
+                    //Помечаем как закрытую предыдущую клетку.
+                    this.markClose(waitingCell);
+                    //Сохраняем цвет предыдущей клетки.
+                    const oldColor = this.count;
+                    //очищаем счетчик 
+                    this.count = '';
+                    //Через полсекунды.
                     const timer = setTimeout(() => {
-                        cell.classList.remove([data]);
+                        //Убираем окраску кликнутой клетки.
+                        cell.classList.remove([dataColor]);
+                        //Убираем окраску предыдущей клетки.
+                        waitingCell.classList.remove([oldColor]);
                         clearTimeout(timer);
                     }, 500);
                 } else {
-                    //Если цвета одинковые - очищаем счетчик (новая клетка остается открытой).
-                    this.count = '';
-                    //Помечаем как открытую.
+                    //Если цвета одинаковые - помечаем как открытую (новая клетка остается открытой).
                     this.markOpen(cell);
+                    //Снимаем статус ждущей с предыдущей клетки.
+                    this.markNoWaiting(waitingCell);
+                    //очищаем счетчик 
+                    this.count = '';
                 };
             } else {
                 //Если счетчик пуст - записываем в него цвет кликнутой кнопки.
-                this.count = data;
+                this.count = dataColor;
                 //Помечаем как открытую.
                 this.markOpen(cell);
+                //Помечаем как ждущую результата следующего клика.
+                this.markWaiting(cell);
             };
         };
 
@@ -125,8 +138,10 @@ class Game {
             setTimeout( () => {
                 alert('Вы выиграли!\r\r Затраченное время: ' + this.watch.innerHTML);
                 location.reload();
-            }, 0 );
-        }; 
+            }, 100 );
+        };
+        //Вешаем новый слушатель клика.
+        this.board.addEventListener( 'click', this.showColor.bind(this), {once: true} );
     };
 
     clearGame() {
@@ -138,23 +153,24 @@ class Game {
         cell.classList.remove('close');
     };
 
+    markClose(cell) {
+        cell.classList.add('close');
+    };
+
+    markWaiting(cell) {
+        cell.classList.add('waiting');
+    };
+
+    markNoWaiting(cell) {
+        cell.classList.remove('waiting');
+    };
+
     crateDiv() {
         const div = document.createElement('div');
         return div;
     };
 }
 
-const newGame = new Game();
+const newGame = new game();
+//const newGame = new Game();
 newGame.startGame();
-
-
-
-
-
-
-
-
-
-
-
-
